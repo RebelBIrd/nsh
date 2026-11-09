@@ -14691,6 +14691,95 @@ fn measures_in_root_coordinates() {
     assert_eq!(c.measure(1000), None);
 }
 
+/// `scrollIntoView` becomes a `ScrollTo` of the scroll view around, placed
+/// as its alignment says, and nothing when the view is where it would go.
+#[test]
+fn scrolls_a_view_into_view() {
+    let mut c = core();
+    apply(
+        &mut c,
+        vec![
+            Op::Create {
+                id: 2,
+                tag: Tag::Scroll,
+            },
+            Op::Create {
+                id: 4,
+                tag: Tag::View,
+            },
+            Op::Create {
+                id: 6,
+                tag: Tag::View,
+            },
+            style_op(2, &[("height", StyleValue::Number(300.0))]),
+            style_op(
+                4,
+                &[
+                    ("padding", StyleValue::Number(20.0)),
+                    ("height", StyleValue::Number(1000.0)),
+                ],
+            ),
+            style_op(
+                6,
+                &[
+                    ("marginTop", StyleValue::Number(500.0)),
+                    ("height", StyleValue::Number(30.0)),
+                ],
+            ),
+            Op::Insert {
+                parent: 4,
+                child: 6,
+                before: None,
+            },
+            Op::Insert {
+                parent: 2,
+                child: 4,
+                before: None,
+            },
+            Op::Insert {
+                parent: ROOT_ID,
+                child: 2,
+                before: None,
+            },
+        ],
+    );
+    c.commit().unwrap();
+    let scroll = |c: &mut Core<FakeEngine>, block| {
+        c.apply(Op::Command {
+            id: 6,
+            command: Command::ScrollIntoView(crate::ScrollIntoView {
+                block,
+                animated: false,
+                ..Default::default()
+            }),
+        })
+        .unwrap();
+        c.commit().and_then(|batch| {
+            batch.items.iter().find_map(|item| match item {
+                MountItem::Command {
+                    id: 2,
+                    command: Command::ScrollTo { y, animated, .. },
+                } => {
+                    assert!(!animated);
+                    Some(y.0)
+                }
+                MountItem::Command { command, .. } => {
+                    panic!("only the scroll view scrolls: {command:?}")
+                }
+                _ => None,
+            })
+        })
+    };
+    use crate::ScrollAlignment::*;
+    assert_eq!(scroll(&mut c, Start), Some(520.0));
+    c.set_scroll_offset(2, point(px(0.0), px(520.0)), u32::MAX);
+    assert_eq!(scroll(&mut c, Nearest), None);
+    assert_eq!(scroll(&mut c, Center), Some(385.0));
+    assert_eq!(scroll(&mut c, End), Some(250.0));
+    c.set_scroll_offset(2, point(px(0.0), px(0.0)), u32::MAX);
+    assert_eq!(scroll(&mut c, Nearest), Some(250.0));
+}
+
 /// `desktop={{ windowDrag }}` reaches the platform in the view's props, and
 /// clearing it sends them again.
 #[test]
