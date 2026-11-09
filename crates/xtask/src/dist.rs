@@ -134,19 +134,27 @@ pub(crate) fn dist() -> anyhow::Result<()> {
         for file in &built {
             remove(file)?;
         }
-        cargo(
-            &[
-                "build",
-                "--release",
-                "--manifest-path",
-                "crates/gpui/Cargo.toml",
-                "--target-dir",
-                "target",
-                "-p",
-                package,
-            ],
-            "the development host for GPUI",
-        )?;
+        let mut args = vec![
+            "build",
+            "--release",
+            "--manifest-path",
+            "crates/gpui/Cargo.toml",
+            "--target-dir",
+            "target",
+            "-p",
+            package,
+        ];
+        // Without Xcode's Metal Toolchain GPUI compiles its shaders when the
+        // app starts, as the CLI's own GPUI builds do.
+        if cfg!(target_os = "macos")
+            && !Command::new("xcrun")
+                .args(["metal", "--version"])
+                .output()
+                .is_ok_and(|out| out.status.success())
+        {
+            args.extend(["--features", "nsh-platform-gpui/runtime-shaders"]);
+        }
+        cargo(&args, "the development host for GPUI")?;
         let host = built
             .iter()
             .find(|file| file.exists())
@@ -194,9 +202,9 @@ pub(crate) fn dist() -> anyhow::Result<()> {
         );
     }
 
-    // Android runtimes. Windows machines often have no Android SDK: the
-    // distribution is then made without them.
-    let android = !cfg!(windows) || android::Sdk::find().is_ok();
+    // Android runtimes. A machine without an Android SDK makes the
+    // distribution without them.
+    let android = android::Sdk::find().is_ok();
     if !android {
         term::warn("no Android SDK (ANDROID_HOME): the distribution has no Android runtime");
     }
