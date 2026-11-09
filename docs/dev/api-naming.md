@@ -188,6 +188,11 @@ be navigated by keyboard once open). So `nsh/base`'s `Select` owns that unstyled
 (`crates/nsh-base/src/listbox.rs`, which `Combobox` will share) and keeps `gpui-component`'s names for its data
 (`SearchableListItem::title`, `SearchableGroup`'s sections) while its look stays the app's.
 
+`DataTable`'s column `fixed` goes past `gpui-component`'s `ColumnFixed`, which fixes columns at the left only: a
+table of orders or tickets keeps its actions column at the right while the others scroll, as Ant Design's and MUI's
+tables do (`fixed: "right"`, `pinned: "right"`). The values are logical (`"start"`, `"end"`), as `align`'s; `true`
+stays `"start"`, `gpui-component`'s one side.
+
 ## Shapes that can grow
 
 Apps built once run on every later release (`compatibility.md`): types only widen and inputs only gain optional
