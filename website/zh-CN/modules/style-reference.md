@@ -322,7 +322,7 @@ view().p_4().rounded(px(12.0)).bg(white()).shadow([
 | `rotate` | `string \| number \| AnimatedNode` | `.rotate(deg(…))`；`.bind_rotate(&v)` | CSS 的 `rotate`：`"45deg"`、`"0.5turn"`，或绕某个轴旋转，`"x 90deg"`。数字和动画值都表示绕 z 轴顺时针旋转的度数。 |
 | `scale` | `string \| number \| AnimatedNode \| [x, y]` | `.scale(f)`、`.scale_x(f)`、`.scale_y(f)`；`.bind_scale(&v)` | CSS 的 `scale`：`1.5`、`"150%"`、x 和 y（`"1 2"`）。动画值同时缩放两个轴；`[x, y]` 每个轴接受一个数字或动画值。 |
 | `transform` | `string \| TransformStep[]` | `.rotate_x(…)`、`.rotate_y(…)`、`.skew_x(…)`、`.skew_y(…)`、`.transform_none()`；动画步骤：`.bind_transform(kind, &v)`、`.bind_motion(&m)`（作用在样式的所有变换之后） | CSS 的 `transform`：`"translateX(10px) rotate(45deg) scale(1.5)"`，或 `"none"`。函数：`translate()`、`translateX()`、`translateY()`、`scale()`、`scaleX()`、`scaleY()`、`rotate()` / `rotateZ()`、`rotateX()`、`rotateY()`、`skew()`、`skewX()`、`skewY()`、`perspective()`。长度用 `px`（平移也可用 `%`，相对视图自身的尺寸），角度用 `deg`、`rad` 或 `turn`。也可以是数值可以是动画值的步骤列表：用于字符串无法容纳的变换，例如带动画的 3D 旋转（`[{ perspective: 800 }, { rotateY: angle }]`），以及动效的各通道（`m.transform`）。样式的 `transform` 取其中一种形式，因此动画步骤之前的透视也写成列表中的一个步骤。作用在 `translate`、`rotate` 和 `scale` 之后。 |
-| `transformOrigin` | `string \| (number \| string)[]` | `.transform_origin(…)`、`.origin_top_left()` 等 | 各变换的作用中心：关键字、百分比和长度（`"top left"`、`"50% 0"`、`[10, 20]`）。默认为中心。 |
+| `transformOrigin` | `string \| (number \| string)[]` | `.transform_origin(…)`、`.origin_top_left()`、`.origin_anchor()` 等 | 各变换的作用中心：关键字、百分比和长度（`"top left"`、`"50% 0"`、`[10, 20]`）。默认为中心。`"anchor"`（NSH 扩展）：在弹出层的框上取离触发元素中心最近的点，并跟随它实际放置的一侧。 |
 
 `TransformStep` 是只有一个键的对象，按列表的顺序应用：
 
@@ -380,7 +380,7 @@ const angle = createAnimatedValue(0);
 | `transitionProperty` | `string` | `.transition()`、`.transition_all()`、`.transition_colors()`、`.transition_opacity()`、`.transition_shadow()`、`.transition_transform()`、`.transition_none()` | 参与动画的属性，用逗号分隔：`"all"`、`"colors"`（`color`、`backgroundColor`、`borderColor` 等）、`"opacity"`、`"transform"`（所有变换属性）、`"boxShadow"`、`"borderRadius"`、`"borderWidth"`，或 `"none"`。 |
 | `transitionDuration` | `number \| "${number}ms" \| "${number}s"` | `.duration(ms)` | 数字表示毫秒，也可写 `"150ms"` / `"0.2s"`。 |
 | `transitionDelay` | `number \| "${number}ms" \| "${number}s"` | `.delay(ms)` | 过渡开始前的延迟。 |
-| `transitionTimingFunction` | `"linear" \| "ease" \| "ease-in" \| "ease-out" \| "ease-in-out" \| "cubic-bezier(...)"` | `.ease_linear()`、`.ease_in()`、`.ease_out()`、`.ease_in_out()`、`.ease_bezier(…)` | 缓动曲线。 |
+| `transitionTimingFunction` | `"linear" \| "ease" \| "ease-in" \| "ease-out" \| "ease-in-out" \| "cubic-bezier(...)" \| "spring(...)"` | `.ease_linear()`、`.ease_in()`、`.ease_out()`、`.ease_in_out()`、`.ease_bezier(…)`、`.ease_spring(…)` | 缓动曲线（`cubic-bezier()` 的 `y` 超出 0..1 时会越过目标），或 NSH 的 `spring(stiffness, damping[, mass])`：弹簧自己决定时长，持续到稳定为止，不使用 `transitionDuration`。 |
 
 ```rust tabs
 view()

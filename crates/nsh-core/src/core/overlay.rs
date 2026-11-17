@@ -118,6 +118,10 @@ pub(super) struct OverlayState {
     pub(super) host: Option<NodeId>,
     /// Where it was placed last, as `onPosition` reported it.
     pub(super) placed: Option<(Placed, Bounds<Points>)>,
+    /// The point of its box nearest its anchor's center, in the box, once
+    /// placed against an anchor: where `transformOrigin: "anchor"` puts its
+    /// origin ([`Core::mounted_view_style`]).
+    pub(super) anchor_origin: Option<Point<Points>>,
     pub(super) native_anchor: Option<crate::overlay::PlacedAnchor>,
     /// The view it follows in the Tab order while it is shown
     /// ([`crate::ViewProps::tab_after`], [`Core::order_overlays_for_tab`]).
@@ -207,6 +211,7 @@ impl<M: TextEngine> Core<M> {
                 wrapper,
                 host: None,
                 placed: None,
+                anchor_origin: None,
                 native_anchor: None,
                 tab_after: None,
                 hinted: false,
@@ -1499,6 +1504,14 @@ impl<M: TextEngine> Core<M> {
                 placement: config.placement,
             });
             self.set_native_overlay_anchor(key, own);
+            let state = self.overlay_mut(key).expect("overlay");
+            if state.anchor_origin.take().is_some()
+                && self.nodes[key as usize].view_style.transform_origin.anchor
+            {
+                let id = self.nodes[key as usize].id;
+                let style = self.mounted_view_style(key);
+                self.mount.push(MountItem::ViewStyle { id, style });
+            }
             return origin;
         };
         let Some(area) = self.overlay_area(key, host) else {
@@ -1655,6 +1668,23 @@ impl<M: TextEngine> Core<M> {
                         ("available", PayloadValue::Size(placed.available)),
                     ]),
                 ));
+            }
+        }
+        // The side or corner facing the anchor: its center, kept inside the
+        // box (Radix's `--radix-popper-transform-origin`, with the arrow
+        // where the anchor is), so a box moved along its side to stay on
+        // screen still scales from its trigger.
+        let center = anchor.center();
+        let facing = point(
+            Points((center.x.0 - bounds.origin.x.0).clamp(0.0, bounds.size.width.0.max(0.0))),
+            Points((center.y.0 - bounds.origin.y.0).clamp(0.0, bounds.size.height.0.max(0.0))),
+        );
+        let state = self.overlay_mut(key).expect("overlay");
+        if state.anchor_origin != Some(facing) {
+            state.anchor_origin = Some(facing);
+            if self.nodes[key as usize].view_style.transform_origin.anchor {
+                let style = self.mounted_view_style(key);
+                self.mount.push(MountItem::ViewStyle { id, style });
             }
         }
         self.set_native_overlay_anchor(

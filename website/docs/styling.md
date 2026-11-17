@@ -425,7 +425,7 @@ view().origin_top_left().rotate(deg(30.0))
 
 Each is a property of its own, as with classes: a style's `scale` replaces a `scale-95` class and keeps its `rotate-3`. Animated values move `translate`, `rotate` and `scale` natively; for what CSS's string cannot hold with an animated amount, such as a 3D rotation, give `transform` a list of steps: `translateX`, `translateY`, `scale`, `scaleX`, `scaleY`, `rotate` (`rotateZ`), `rotateX`, `rotateY`, `skewX`, `skewY` and `perspective` ([Animation](./animation.md)). A style's `transform` is one form or the other, so a perspective before animated steps is a step of the list.
 
-Rust's `.perspective(..)` is CSS's `perspective` property, as Tailwind's `perspective-*`: it gives the view's children their depth, while the `perspective()` function of a `transform` applies to the view's own transform. `transformOrigin` takes keywords, percentages and lengths (`"top left"`, `"50% 0"`, `[10, 20]`; `.origin_top_left()`, `.transform_origin(..)` in Rust); the default is the center. Transforms do not affect layout: siblings are placed as if the view were untransformed.
+Rust's `.perspective(..)` is CSS's `perspective` property, as Tailwind's `perspective-*`: it gives the view's children their depth, while the `perspective()` function of a `transform` applies to the view's own transform. `transformOrigin` takes keywords, percentages and lengths (`"top left"`, `"50% 0"`, `[10, 20]`; `.origin_top_left()`, `.transform_origin(..)` in Rust); the default is the center. On a popup's box (an anchored `<Overlay>`), `"anchor"` (`origin-anchor`, `.origin_anchor()`) is the point of the box nearest its trigger's center: the side or corner facing the trigger, which follows the side the popup went on, so it scales in from its trigger. Transforms do not affect layout: siblings are placed as if the view were untransformed.
 
 Android has no skew transforms. GPUI cannot turn an image's pixels: a rotated or skewed `Image` is drawn upright at its own size, centered where it would be.
 
@@ -469,7 +469,24 @@ view()
 | `transitionProperty` | What animates: `"all"`, or names separated by commas: colors (`"colors"`, `"backgroundColor"`, `"borderColor"`, ...), `"opacity"`, `"transform"` (every transform property), `"boxShadow"`, `"borderRadius"` / `"borderWidth"` | `.transition()`, `.transition_all()`, `.transition_colors()`, `.transition_opacity()`, `.transition_transform()`, `.transition_shadow()` |
 | `transitionDuration` | `300`, `"300ms"`, `"0.3s"` | `.duration(300.0)` |
 | `transitionDelay` | As the duration | `.delay(100.0)` |
-| `transitionTimingFunction` | `"linear"`, `"ease"`, `"ease-in"`, `"ease-out"`, `"ease-in-out"`, `"cubic-bezier(x1, y1, x2, y2)"` | `.ease_linear()`, `.ease_in()`, `.ease_out()`, `.ease_in_out()`, `.ease_bezier(x1, y1, x2, y2)` |
+| `transitionTimingFunction` | `"linear"`, `"ease"`, `"ease-in"`, `"ease-out"`, `"ease-in-out"`, `"cubic-bezier(x1, y1, x2, y2)"`, `"spring(stiffness, damping)"`, `"spring(stiffness, damping, mass)"` | `.ease_linear()`, `.ease_in()`, `.ease_out()`, `.ease_in_out()`, `.ease_bezier(x1, y1, x2, y2)`, `.ease_spring(Spring { .. })` |
+
+A `cubic-bezier()` whose `y` goes past 0..1 overshoots, as in CSS (`"cubic-bezier(0.3, 1.25, 0.6, 1)"`). `spring()` runs
+the transition on a spring's physics instead: its stiffness, its damping (the coefficient, not a ratio) and its mass
+(1 when left out), from rest. A spring times itself, lasting until it settles, so `transitionDuration` is not used;
+`"spring(620, 36)"` passes its target by about 4% and settles in about 380 ms. The class is `ease-spring-[620,36]`
+(`ease-spring-[620,36,1]` with the mass), and a popup's exit waits for its spring as for any transition.
+
+```rust tabs
+view()
+    .transition_transform()
+    .ease_spring(Spring { stiffness: 620.0, damping: 36.0, ..Spring::default() })
+    .scale(move || if open.get() { 1.0 } else { 0.95 })
+```
+
+```tsx tabs
+<View class="transition-transform ease-spring-[620,36]" style={{ scale: open() ? 1 : 0.95 }} />
+```
 
 Sizes and positions are layout, not style, and do not transition; animate layout changes with `LayoutAnimation` or drive values with native animations ([Animation](./animation.md)).
 
@@ -518,6 +535,8 @@ These keys and classes carry what native platforms do beyond CSS:
 | `textAlignVertical` | | Where text shorter than its `<Text>` box sits: `"top"` (the default), `"center"` or `"bottom"` |
 | `textAlign: "auto"` | | The text's natural side, by its direction (the default) |
 | `selectedStyle` | `selected:` | The style while `accessibilityState.selected` is `true` (a selected `Button`, a tab) |
+| `transitionTimingFunction: "spring(…)"` | `ease-spring-[…]` | Transitions on a spring's stiffness, damping and mass, lasting until it settles ([Transitions](#transitions)) |
+| `transformOrigin: "anchor"` | `origin-anchor` | On a popup's box, the point nearest its trigger: it scales from the side or corner facing the trigger |
 | | `ios:`, `android:`, `web:` | Classes for one platform (`ios:pt-2`) |
 
 Values that change also take numbers where CSS takes a string: `transform` as a list of steps, `translate` and `scale` as `[x, y]`, `boxShadow` and `textShadow` as layers.

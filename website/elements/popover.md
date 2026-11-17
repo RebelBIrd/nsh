@@ -129,9 +129,13 @@ closed: the popover stays, taking no presses or keys, while those transitions ru
 again on its way out, it returns to its look from where it is. `popupStartingStyle` and `popupEndingStyle` do the same
 with inline styles. When the user asks for less motion, it appears and goes at once.
 
+`origin-anchor` (`transformOrigin: "anchor"`, Rust's `.origin_anchor()`) scales the popup from the side or corner
+facing its trigger, wherever it was placed, and `ease-spring-[stiffness,damping]` runs the transitions on a spring
+([Styling](../docs/styling.md#transitions)).
+
 ```tsx
 <Popover
-  popupClass="rounded-lg bg-white p-3 shadow-lg transition-all duration-150 ease-out"
+  popupClass="rounded-lg bg-white p-3 shadow-lg origin-anchor transition-all ease-spring-[620,36]"
   popupStartingClass="opacity-0 scale-95"
   popupEndingClass="opacity-0 scale-95"
   onPosition={({ placement }) => side.set(placement)}

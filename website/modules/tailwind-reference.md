@@ -382,7 +382,7 @@ Shadows, rings and inset shadows combine into one `boxShadow` list, as in CSS. A
 | `scale-<pct>`, `scale-x-<pct>`, `scale-y-<pct>`, `scale-[<factor>]` | `scale`: `scale-95` = 0.95, `-scale-x-100` mirrors |
 | `skew-<deg>`, `skew-x-<deg>`, `skew-y-<deg>` | skew, in `transform` (not on Android) |
 | `perspective-dramatic` (100), `-near` (300), `-normal` (500), `-midrange` (800), `-distant` (1200), `perspective-[<length>]`, `perspective-none` | depth for the 3D rotations of the element's children, seen from its center (CSS's `perspective`: `<View class="perspective-near"><View class="rotate-y-45" /></View>`) |
-| `origin-center`, `-top`, `-top-right`, `-right`, `-bottom-right`, `-bottom`, `-bottom-left`, `-left`, `-top-left`, `origin-[<value>]` | `transformOrigin` |
+| `origin-center`, `-top`, `-top-right`, `-right`, `-bottom-right`, `-bottom`, `-bottom-left`, `-left`, `-top-left`, `origin-[<value>]`, `origin-anchor` (NSH's: on a popup's box, toward its trigger) | `transformOrigin` |
 | `backface-hidden`, `backface-visible` | `backfaceVisibility` |
 | `transform-none` | clears the 3D rotations and the skews (CSS's `transform: none`) |
 | `translate-none`, `rotate-none`, `scale-none` | clears the translation, the rotation, the scale |
@@ -398,7 +398,7 @@ Transform utilities compose like CSS: `translate-*`, `rotate-*` and `scale-*` se
 | `transition-none` | no transition |
 | `duration-<ms>`, `duration-[<time>]` | `transitionDuration`: `duration-300`, `duration-[0.4s]` |
 | `delay-<ms>`, `delay-[<time>]` | `transitionDelay` |
-| `ease-linear`, `ease-in`, `ease-out`, `ease-in-out`, `ease-initial`, `ease-[cubic-bezier(...)]` | `transitionTimingFunction` |
+| `ease-linear`, `ease-in`, `ease-out`, `ease-in-out`, `ease-initial`, `ease-[cubic-bezier(...)]`, `ease-spring-[stiffness,damping]` / `ease-spring-[stiffness,damping,mass]` (NSH's: a spring that times itself) | `transitionTimingFunction` |
 | `animate-spin`, `animate-ping`, `animate-pulse`, `animate-bounce` | a native keyframe animation, repeated forever |
 | `animate-none` | stops it |
 

@@ -783,6 +783,9 @@ expect Life: popover open
 # class.
 frame parent:text:PopoverBody 280 45 80 34
 style parent:text:PopoverBody backgroundColor #123456ff
+# `origin-anchor`: the point of its box nearest the trigger's center
+# (195, 100), on its bottom edge at its left end.
+style parent:text:PopoverBody transformOrigin 0 34 0
 # Escape or back: heard, and with `closeOnEscape={false}` it stays.
 event text:PopoverBody onCancel
 expect Log: popover cancel

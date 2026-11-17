@@ -474,6 +474,8 @@ pub(crate) enum Declaration {
     Duration(Bits),
     Delay(Bits),
     Ease([Bits; 4]),
+    /// A spring's stiffness, damping and mass (`ease-spring-[…]`).
+    EaseSpring([Bits; 3]),
     /// Tailwind's `ease-*`.
     EasePreset(&'static str),
     /// A keyframe animation (`None`: none).
@@ -510,6 +512,7 @@ fn origin(x: f32, y: f32) -> TransformOrigin {
         x: DefiniteLength::Fraction(Percentage(x)),
         y: DefiniteLength::Fraction(Percentage(y)),
         z: Points::ZERO,
+        anchor: false,
     }
 }
 
@@ -652,6 +655,7 @@ impl Declaration {
                         x,
                         y,
                         z: Points::ZERO,
+                        anchor: false,
                     }),
                 ));
             }
@@ -712,6 +716,12 @@ impl Declaration {
             Declaration::Duration(ms) => part(out, Part::Duration(ms.0)),
             Declaration::Delay(ms) => part(out, Part::Delay(ms.0)),
             Declaration::Ease(curve) => part(out, Part::Ease(curve.map(|b| b.0))),
+            Declaration::EaseSpring(physics) => {
+                let [stiffness, damping, mass] = physics.map(|b| b.0);
+                if let Some(spring) = crate::style::spring_of((stiffness, damping, mass)) {
+                    part(out, Part::Spring(spring));
+                }
+            }
             Declaration::EasePreset(name) => {
                 if let Some(curve) = PRESETS.ease.get(*name) {
                     part(out, Part::Ease(*curve));
@@ -3215,10 +3225,25 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Transitions along the cubic Bézier curve `x1, y1, x2, y2`.
+    /// Transitions along the cubic Bézier curve `x1, y1, x2, y2` (a `y`
+    /// outside 0..1 overshoots).
     fn ease_bezier(mut self, x1: f32, y1: f32, x2: f32, y2: f32) -> Self {
         self.style()
             .push(Declaration::Ease([x1, y1, x2, y2].map(Bits)));
+        self
+    }
+
+    /// Transitions on a spring's physics (its stiffness, damping and mass;
+    /// Tailwind extension `ease-spring-[620,36]`): they time themselves,
+    /// lasting until the spring settles ([`Spring::settle_ms`]), so
+    /// [`Self::duration`] is not used. A spring that cannot settle (a
+    /// stiffness, damping or mass that is not positive) sets nothing.
+    ///
+    /// [`Spring::settle_ms`]: crate::element::Spring::settle_ms
+    fn ease_spring(mut self, spring: crate::element::Spring) -> Self {
+        self.style().push(Declaration::EaseSpring(
+            [spring.stiffness, spring.damping, spring.mass].map(Bits),
+        ));
         self
     }
 
@@ -3392,12 +3417,29 @@ pub trait Styled: Sized {
     /// The point its transform turns and scales around (the center by
     /// default).
     fn transform_origin(mut self, origin: TransformOrigin) -> Self {
+        if origin.anchor {
+            return self.origin_anchor();
+        }
         let axis = |l: DefiniteLength| match l {
             DefiniteLength::Absolute(a) => (false, Bits(a.to_points(REM_SIZE).0)),
             DefiniteLength::Fraction(f) => (true, Bits(f.0)),
         };
         self.style()
             .push(Declaration::Origin([axis(origin.x), axis(origin.y)]));
+        self
+    }
+
+    /// On an anchored overlay (a popup's box), transforms around the point
+    /// of its box nearest its anchor's center: the side or corner facing
+    /// its trigger, which follows where the overlay was placed (Radix's
+    /// `--radix-popper-transform-origin`; Tailwind extension
+    /// `origin-anchor`), so a popup scales in from its trigger. Elsewhere
+    /// the center.
+    fn origin_anchor(mut self) -> Self {
+        self.style().value(
+            StyleKey::TransformOrigin,
+            PropertyValue::TransformOrigin(TransformOrigin::ANCHOR),
+        );
         self
     }
 
@@ -4796,6 +4838,27 @@ mod tests {
             s().transition_transform().duration(200.0),
             "transition-transform duration-200",
         );
+        let spring = crate::element::Spring {
+            stiffness: 620.0,
+            damping: 36.0,
+            ..crate::element::Spring::default()
+        };
+        same(
+            s().transition_transform().ease_spring(spring),
+            "transition-transform ease-spring-[620,36]",
+        );
+        same(
+            s().transition_opacity()
+                .ease_spring(crate::element::Spring {
+                    mass: 2.0,
+                    ..spring
+                }),
+            "transition-opacity ease-spring-[620,36,2]",
+        );
+        same(
+            s().transition().ease_bezier(0.3, 1.25, 0.6, 1.0),
+            "transition ease-[cubic-bezier(0.3,1.25,0.6,1)]",
+        );
         for (typed, classes) in [
             (s().animate_spin(), "animate-spin"),
             (s().animate_ping(), "animate-ping"),
@@ -5015,8 +5078,14 @@ mod tests {
                 x: px(10.0).into(),
                 y: relative(0.25),
                 z: Points::ZERO,
+                anchor: false,
             }),
             "origin-[10px_25%]",
+        );
+        same(s().origin_anchor(), "origin-anchor");
+        same(
+            s().transform_origin(TransformOrigin::ANCHOR),
+            "origin-anchor",
         );
     }
 

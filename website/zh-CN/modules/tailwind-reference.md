@@ -382,7 +382,7 @@ view()
 | `scale-<pct>`、`scale-x-<pct>`、`scale-y-<pct>`、`scale-[<factor>]` | `scale`：`scale-95` = 0.95，`-scale-x-100` 为水平镜像 |
 | `skew-<deg>`、`skew-x-<deg>`、`skew-y-<deg>` | 斜切，在 `transform` 中（Android 不支持） |
 | `perspective-dramatic`（100）、`-near`（300）、`-normal`（500）、`-midrange`（800）、`-distant`（1200）、`perspective-[<length>]`、`perspective-none` | 元素子元素 3D 旋转的透视距离，从元素中心观察（CSS 的 `perspective`：`<View class="perspective-near"><View class="rotate-y-45" /></View>`） |
-| `origin-center`、`-top`、`-top-right`、`-right`、`-bottom-right`、`-bottom`、`-bottom-left`、`-left`、`-top-left`、`origin-[<value>]` | `transformOrigin` |
+| `origin-center`、`-top`、`-top-right`、`-right`、`-bottom-right`、`-bottom`、`-bottom-left`、`-left`、`-top-left`、`origin-[<value>]`、`origin-anchor`（NSH 扩展：在弹出层的框上朝向触发元素） | `transformOrigin` |
 | `backface-hidden`、`backface-visible` | `backfaceVisibility` |
 | `transform-none` | 清除 3D 旋转和斜切（CSS 的 `transform: none`） |
 | `translate-none`、`rotate-none`、`scale-none` | 分别清除平移、旋转、缩放 |
@@ -398,7 +398,7 @@ view()
 | `transition-none` | 无过渡 |
 | `duration-<ms>`、`duration-[<time>]` | `transitionDuration`：`duration-300`、`duration-[0.4s]` |
 | `delay-<ms>`、`delay-[<time>]` | `transitionDelay` |
-| `ease-linear`、`ease-in`、`ease-out`、`ease-in-out`、`ease-initial`、`ease-[cubic-bezier(...)]` | `transitionTimingFunction` |
+| `ease-linear`、`ease-in`、`ease-out`、`ease-in-out`、`ease-initial`、`ease-[cubic-bezier(...)]`、`ease-spring-[stiffness,damping]` / `ease-spring-[stiffness,damping,mass]`（NSH 扩展：自己决定时长的弹簧） | `transitionTimingFunction` |
 | `animate-spin`、`animate-ping`、`animate-pulse`、`animate-bounce` | 原生关键帧动画，无限循环 |
 | `animate-none` | 停止动画 |
 

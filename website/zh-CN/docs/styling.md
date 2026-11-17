@@ -416,7 +416,7 @@ view().origin_top_left().rotate(deg(30.0))
 
 与类名一样，每个都是独立的属性：样式中的 `scale` 替换 `scale-95` 类，并保留 `rotate-3`。动画值以原生方式驱动 `translate`、`rotate` 和 `scale`；CSS 字符串无法容纳动画数值的变换，例如 3D 旋转，给 `transform` 一个步骤列表：`translateX`、`translateY`、`scale`、`scaleX`、`scaleY`、`rotate`（`rotateZ`）、`rotateX`、`rotateY`、`skewX`、`skewY` 和 `perspective`（[动画](./animation.md)）。样式的 `transform` 取其中一种形式，因此动画步骤之前的透视也写成列表中的一个步骤。
 
-Rust 的 `.perspective(..)` 是 CSS 的 `perspective` 属性，与 Tailwind 的 `perspective-*` 相同：它给视图的子视图景深；而 `transform` 中的 `perspective()` 函数作用于视图自身的变换。`transformOrigin` 接受关键字、百分比和长度（`"top left"`、`"50% 0"`、`[10, 20]`；Rust 中的 `.origin_top_left()`、`.transform_origin(..)`），默认为中心。变换不影响布局：兄弟视图的位置按视图未变换时计算。
+Rust 的 `.perspective(..)` 是 CSS 的 `perspective` 属性，与 Tailwind 的 `perspective-*` 相同：它给视图的子视图景深；而 `transform` 中的 `perspective()` 函数作用于视图自身的变换。`transformOrigin` 接受关键字、百分比和长度（`"top left"`、`"50% 0"`、`[10, 20]`；Rust 中的 `.origin_top_left()`、`.transform_origin(..)`），默认为中心。在弹出层的框（有锚点的 `<Overlay>`）上，`"anchor"`（`origin-anchor`、`.origin_anchor()`）是框上离触发元素中心最近的点：朝向触发元素的那条边或那个角，并跟随弹出层实际放置的一侧，因此它从触发元素处缩放出现。变换不影响布局：兄弟视图的位置按视图未变换时计算。
 
 Android 不支持斜切（skew）变换。GPUI 无法旋转图片的像素：旋转或斜切的 `Image` 按自身尺寸正放绘制，中心位于原本的位置。
 
@@ -460,7 +460,20 @@ view()
 | `transitionProperty` | 要动画的属性：`"all"`，或用逗号分隔的名称：颜色（`"colors"`、`"backgroundColor"`、`"borderColor"` 等）、`"opacity"`、`"transform"`（所有变换属性）、`"boxShadow"`、`"borderRadius"` / `"borderWidth"` | `.transition()`、`.transition_all()`、`.transition_colors()`、`.transition_opacity()`、`.transition_transform()`、`.transition_shadow()` |
 | `transitionDuration` | `300`、`"300ms"`、`"0.3s"` | `.duration(300.0)` |
 | `transitionDelay` | 同时长 | `.delay(100.0)` |
-| `transitionTimingFunction` | `"linear"`、`"ease"`、`"ease-in"`、`"ease-out"`、`"ease-in-out"`、`"cubic-bezier(x1, y1, x2, y2)"` | `.ease_linear()`、`.ease_in()`、`.ease_out()`、`.ease_in_out()`、`.ease_bezier(x1, y1, x2, y2)` |
+| `transitionTimingFunction` | `"linear"`、`"ease"`、`"ease-in"`、`"ease-out"`、`"ease-in-out"`、`"cubic-bezier(x1, y1, x2, y2)"`、`"spring(stiffness, damping)"`、`"spring(stiffness, damping, mass)"` | `.ease_linear()`、`.ease_in()`、`.ease_out()`、`.ease_in_out()`、`.ease_bezier(x1, y1, x2, y2)`、`.ease_spring(Spring { .. })` |
+
+`y` 超出 0..1 的 `cubic-bezier()` 会越过目标再回来，与 CSS 一致（`"cubic-bezier(0.3, 1.25, 0.6, 1)"`）。`spring()` 则让过渡按弹簧的物理运动：刚度、阻尼（系数，不是阻尼比）和质量（省略时为 1），从静止开始。弹簧自己决定时长，持续到它稳定为止，因此不使用 `transitionDuration`；`"spring(620, 36)"` 越过目标约 4%，约 380 ms 稳定。对应的类是 `ease-spring-[620,36]`（带质量时为 `ease-spring-[620,36,1]`），弹出层的离开同样会等它的弹簧播放完毕。
+
+```rust tabs
+view()
+    .transition_transform()
+    .ease_spring(Spring { stiffness: 620.0, damping: 36.0, ..Spring::default() })
+    .scale(move || if open.get() { 1.0 } else { 0.95 })
+```
+
+```tsx tabs
+<View class="transition-transform ease-spring-[620,36]" style={{ scale: open() ? 1 : 0.95 }} />
+```
 
 尺寸和位置属于布局而不是样式，不会产生过渡；要为布局变化做动画，使用 `LayoutAnimation`，或用原生动画驱动数值（[动画](./animation.md)）。
 
@@ -509,6 +522,8 @@ view()
 | `textAlignVertical` | | 文字比 `<Text>` 的框矮时的位置：`"top"`（默认）、`"center"` 或 `"bottom"` |
 | `textAlign: "auto"` | | 文字的自然一侧，由其方向决定（默认） |
 | `selectedStyle` | `selected:` | `accessibilityState.selected` 为 `true` 时的样式（选中的 `Button`、标签页） |
+| `transitionTimingFunction: "spring(…)"` | `ease-spring-[…]` | 让过渡按弹簧的刚度、阻尼和质量运动，持续到它稳定为止（[过渡](#过渡)） |
+| `transformOrigin: "anchor"` | `origin-anchor` | 在弹出层的框上取离触发元素最近的点：从朝向触发元素的那条边或那个角缩放 |
 | | `ios:`、`android:`、`web:` | 只在某个平台生效的类（`ios:pt-2`） |
 
 会变化的值在 CSS 只接受字符串的地方也接受数字：`transform` 可以写成步骤列表，`translate` 和 `scale` 写成 `[x, y]`，`boxShadow` 和 `textShadow` 写成各层。

@@ -627,6 +627,12 @@ impl<M: TextEngine> Core<M> {
     pub(super) fn mounted_view_style(&self, key: Key) -> Box<ViewStyle> {
         let node = &self.nodes[key as usize];
         let mut style = node.mounted_view_style();
+        if style.transform_origin.anchor
+            && let Some(at) = self.overlay(key).and_then(|o| o.anchor_origin)
+        {
+            style.transform_origin.x = at.x.into();
+            style.transform_origin.y = at.y.into();
+        }
         let parent = node.parent;
         if parent == NO_KEY || node.inline {
             return style;
@@ -964,9 +970,7 @@ impl<M: TextEngine> Core<M> {
             .transition
             .filter(|t| t.properties.0 != 0)
             .map_or(std::time::Duration::ZERO, |t| {
-                std::time::Duration::from_secs_f32(
-                    (t.duration.max(0.0) + t.delay.max(0.0)) / 1000.0,
-                )
+                std::time::Duration::from_secs_f32((t.run_ms() + t.delay.max(0.0)) / 1000.0)
             })
     }
 

@@ -1,6 +1,7 @@
 // A case of the API's test suite (docs/dev/compatibility.md): the popups of
 // `nsh/base` on a phone, on the core's overlays: a `Popover` anchored to its
-// trigger (controlled and not; its side, alignment, gap and margin; Escape
+// trigger (controlled and not; its side, alignment, gap and margin; its
+// transform origin facing the trigger, `origin-anchor`; Escape
 // heard without closing), a `Menu` presented as a sheet whose `Submenu`
 // replaces its items (and reports it, or with `open` asks the app), its `MenuItem`s (disabled, kept open, labelled) and a
 // `MenuSeparator`, a `ContextMenu` a held finger opens, `Tooltip`s given as
@@ -46,7 +47,7 @@ function App() {
         align="end"
         offset={6}
         margin={30}
-        popupClass="bg-[#123456]"
+        popupClass="bg-[#123456] origin-anchor"
         popupStyle={{ width: 80 }}
         trigger={<View style={{ height: 30 }}><Text>PopTrigger</Text></View>}
       >

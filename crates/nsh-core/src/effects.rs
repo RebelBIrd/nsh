@@ -982,13 +982,30 @@ pub struct Transition {
     pub duration: f32,
     /// Milliseconds before it starts.
     pub delay: f32,
-    /// Cubic Bézier `x1, y1, x2, y2`.
+    /// Cubic Bézier `x1, y1, x2, y2` (a `y` outside 0..1 overshoots).
     pub easing: [f32; 4],
+    /// A spring's physics it runs on instead of `easing`
+    /// (`transitionTimingFunction: "spring(stiffness, damping, mass)"`),
+    /// released at rest: it times itself, lasting until it settles
+    /// ([`Spring::settle_ms`](crate::element::Spring::settle_ms)), so
+    /// `duration` is not used, nor the spring's `velocity` and
+    /// `frame_rate`. A change that arrives mid-way starts again from what
+    /// is on screen, at rest.
+    pub spring: Option<crate::element::Spring>,
 }
 
 impl Transition {
     /// CSS's default curve (`ease`).
     pub const EASE: [f32; 4] = [0.25, 0.1, 0.25, 1.0];
+
+    /// How long it runs once started, in milliseconds: the duration, or
+    /// the time its spring takes to settle (its delay not included).
+    pub fn run_ms(&self) -> f32 {
+        match self.spring {
+            Some(spring) => spring.settle_ms(),
+            None => self.duration.max(0.0),
+        }
+    }
 }
 
 /// A built-in keyframe animation (Tailwind's `animate-*`).

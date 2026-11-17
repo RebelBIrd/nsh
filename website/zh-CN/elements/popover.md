@@ -119,9 +119,11 @@ let panel!: ViewRef;
 
 弹出框随你的过渡出现和离开。`popupStartingClass` 是弹出层第一帧的外观，`popupClass` 里的 `transition-*` 类把它过渡到自己的外观：这就是它的出现。`popupEndingClass` 是关闭后的外观：弹出框会保留下来、不再接受按压和按键，直到这些过渡播放完毕才离开，随后触发 `onClose`。在离开途中再次打开时，它从当前状态回到自己的外观。`popupStartingStyle` 和 `popupEndingStyle` 以内联样式做同样的事。用户要求减少动态效果时，它立即出现、立即离开。
 
+`origin-anchor`（`transformOrigin: "anchor"`，Rust 中为 `.origin_anchor()`）让弹出层从朝向触发元素的那条边或那个角缩放，无论它被放在哪里；`ease-spring-[stiffness,damping]` 让过渡按弹簧运动（[样式](../docs/styling.md#过渡)）。
+
 ```tsx
 <Popover
-  popupClass="rounded-lg bg-white p-3 shadow-lg transition-all duration-150 ease-out"
+  popupClass="rounded-lg bg-white p-3 shadow-lg origin-anchor transition-all ease-spring-[620,36]"
   popupStartingClass="opacity-0 scale-95"
   popupEndingClass="opacity-0 scale-95"
   onPosition={({ placement }) => side.set(placement)}

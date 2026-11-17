@@ -30647,6 +30647,94 @@ fn an_anchored_overlay_lands_on_whole_device_pixels() {
 }
 
 #[test]
+fn an_anchor_origin_faces_the_overlays_anchor() {
+    use StyleValue::{Number, Str};
+
+    use crate::geometry::DefiniteLength;
+    let mut c = core();
+    add(
+        &mut c,
+        2,
+        Tag::Scroll,
+        ROOT_ID,
+        &[("height", Number(480.0))],
+    );
+    add(&mut c, 4, Tag::View, 2, &[("height", Number(100.0))]);
+    add(
+        &mut c,
+        6,
+        Tag::View,
+        2,
+        &[
+            ("width", Number(80.0)),
+            ("height", Number(40.0)),
+            ("marginLeft", Number(20.0)),
+        ],
+    );
+    add(&mut c, 8, Tag::View, 2, &[("height", Number(1000.0))]);
+    add(
+        &mut c,
+        10,
+        Tag::Overlay,
+        6,
+        &[("transformOrigin", Str("anchor"))],
+    );
+    add(
+        &mut c,
+        12,
+        Tag::View,
+        10,
+        &[("width", Number(120.0)), ("height", Number(60.0))],
+    );
+    apply(
+        &mut c,
+        vec![
+            overlay_prop(
+                10,
+                crate::OverlayProp::Anchor(crate::overlay::OverlayAnchor::Node(6)),
+            ),
+            overlay_prop(10, crate::OverlayProp::Align(crate::overlay::Align::Start)),
+            overlay_prop(10, crate::OverlayProp::Offset(px(4.0))),
+        ],
+    );
+    let origin = |batch: &MountBatch| {
+        let o = view_style_of(batch, 10).expect("restyled").transform_origin;
+        assert!(o.anchor);
+        (o.x, o.y)
+    };
+    let at = |x: f32, y: f32| (DefiniteLength::from(px(x)), DefiniteLength::from(px(y)));
+    // Below its trigger (20, 100, 80 × 40), lined up with its start: the
+    // middle of the trigger on its top edge.
+    let batch = c.commit().unwrap();
+    assert_eq!(frame_of(&batch, 10), Some(rect(20.0, 144.0, 120.0, 60.0)));
+    assert_eq!(origin(&batch), at(40.0, 0.0));
+    // Flipped above: its bottom edge.
+    c.set_scroll_offset(2, point(px(0.0), px(-300.0)), 0);
+    let batch = c.commit().unwrap();
+    assert_eq!(frame_of(&batch, 10), Some(rect(20.0, 336.0, 120.0, 60.0)));
+    assert_eq!(origin(&batch), at(40.0, 60.0));
+    // At a point (a context menu): the corner at the pointer.
+    c.set_scroll_offset(2, point(px(0.0), px(0.0)), 0);
+    apply(
+        &mut c,
+        vec![overlay_prop(
+            10,
+            crate::OverlayProp::Anchor(crate::overlay::OverlayAnchor::Point(point(
+                px(200.0),
+                px(50.0),
+            ))),
+        )],
+    );
+    let batch = c.commit().unwrap();
+    let frame = frame_of(&batch, 10).unwrap();
+    assert!(frame.origin.y >= px(50.0) && frame.origin.x <= px(200.0));
+    assert_eq!(origin(&batch), at(200.0 - frame.origin.x.0, 0.0));
+    // Placed where it was: its style is not sent again.
+    let batch = c.commit();
+    assert!(batch.is_none_or(|b| view_style_of(&b, 10).is_none()));
+}
+
+#[test]
 fn overlays_with_a_cover_lay_that_view_over_the_anchor() {
     use StyleValue::Number;
     let mut c = core();
